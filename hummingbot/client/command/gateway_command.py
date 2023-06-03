@@ -343,7 +343,33 @@ class GatewayCommand(GatewayChainApiManager):
         if self.app.to_stop_config:
             return
 
+
         additional_prompt_values = {}
+
+        while True:
+
+            use_capital_provider: str = await self.app.prompt(
+                prompt=f"Do you want to connect to {chain}-{network} with a capital provider? (Yes/No) >>> "
+            )
+            if self.app.to_stop_config:
+                return
+            if use_capital_provider is not None and use_capital_provider in ["Y", "y", "Yes", "yes"]:
+                capital_providers = []
+                capital_provider: str = await self.app.prompt(
+                    prompt=f"Enter your {chain}-{network} capital provider address >>> ",
+                    is_password=False
+                )
+                capital_providers.append(capital_provider)
+                self.app.clear_input()
+                additional_prompt_values["capitalProviders"] = capital_providers
+                break
+
+            # TODO: handle when user do not want to provide capitalProvider
+            # TODO: handle cases with multiple capitalProviders
+            if use_capital_provider in ["N", "n", "No", "no"]:
+                additional_prompt_values["capitalProviders"] = []
+                break
+            self.notify("Invalid input. Please try again or exit config [CTRL + x].\n")
 
         if chain == "near":
             wallet_account_id: str = await self.app.prompt(
