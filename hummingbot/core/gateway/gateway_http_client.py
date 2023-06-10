@@ -280,8 +280,8 @@ class GatewayHttpClient:
             network: str,
             address: str,
             token_symbols: List[str],
-            capital_provider: str = '',
             connector: str = None,
+            capital_provider: str = '',
             fail_silently: bool = False,
     ) -> Dict[str, Any]:
         if isinstance(token_symbols, list):
