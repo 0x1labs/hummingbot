@@ -264,6 +264,13 @@ class GatewayHttpClient:
         request.update(kwargs)
         return await self.api_request(method="post", path_url="wallet/add", params=request)
 
+    async def add_capital_provider(
+        self, chain: str, network: str, wallet_address: str, capital_provider_address: str, **kwargs
+    ) -> Dict[str, Any]:
+        request = {"chain": chain, "network": network, "walletAddress": wallet_address, "capitalProviderAddress": capital_provider_address}
+        request.update(kwargs)
+        return await self.api_request(method="post", path_url="wallet/addCapitalProvider", params=request)
+
     async def get_configuration(self, fail_silently: bool = False) -> Dict[str, Any]:
         return await self.api_request("get", "network/config", fail_silently=fail_silently)
 

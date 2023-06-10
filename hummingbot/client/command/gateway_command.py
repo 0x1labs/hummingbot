@@ -229,16 +229,49 @@ class GatewayCommand(GatewayChainApiManager):
                 wallets_response: List[Dict[str, Any]] = await self._get_gateway_instance().get_wallets()
                 matching_wallets: List[Dict[str, Any]] = [w for w in wallets_response if w["chain"] == chain]
                 wallets: List[str]
+                capital_providers: List[List[str]]
+
+                capital_provider: str = ''
+
                 if len(matching_wallets) < 1:
                     wallets = []
                 else:
                     wallets = matching_wallets[0]['walletAddresses']
+                    capital_providers = matching_wallets[0]['capitalProviders']
 
                 # if the user has no wallet, ask them to select one
                 if len(wallets) < 1 or chain == "near" or len(additional_prompts) != 0:
                     wallet_address, additional_prompt_values = await self._prompt_for_wallet_address(
                         chain=chain, network=network, additional_prompts=additional_prompts
                     )
+
+                    while True:
+
+                        use_capital_provider: str = await self.app.prompt(
+                            prompt=f"Do you want to trade on {chain}-{network} with a capital provider? (Yes/No) >>> "
+                        )
+                        if self.app.to_stop_config:
+                            return
+                        if use_capital_provider is not None and use_capital_provider in ["Y", "y", "Yes", "yes"]:
+                            capital_provider: str = await self.app.prompt(
+                                prompt=f"Enter your {chain}-{network} capital provider address approved for {wallet_address} >>> ",
+                                is_password=False
+                            )
+                            # TODO: handle error when capital_provider has not given permission
+                            await self._get_gateway_instance().add_capital_provider(
+                                chain, network, wallet_address, capital_provider
+                            )
+                            self.app.clear_input()
+                            break
+
+                        # TODO: handle when user do not want to provide capitalProvider
+                        # TODO: handle cases with multiple capitalProviders
+                        if use_capital_provider in ["N", "n", "No", "no"]:
+                            additional_prompt_values["capitalProviders"] = []
+                            break
+                        self.notify("Invalid input. Please try again or exit config [CTRL + x].\n")
+
+
 
                 # the user has a wallet. Ask if they want to use it or create a new one.
                 else:
@@ -257,6 +290,7 @@ class GatewayCommand(GatewayChainApiManager):
                     self.app.clear_input()
                     # they use an existing wallet
                     if use_existing_wallet is not None and use_existing_wallet in ["Y", "y", "Yes", "yes"]:
+                        self.notify("Fetching available wallets with balances ...")
                         native_token: str = native_tokens[chain]
                         wallet_table: List[Dict[str, Any]] = []
                         for w in wallets:
@@ -276,12 +310,43 @@ class GatewayCommand(GatewayChainApiManager):
 
                         while True:
                             wallet_address: str = await self.app.prompt(prompt="Select a gateway wallet >>> ")
+                            print(capital_providers)
                             if self.app.to_stop_config:
                                 return
                             if wallet_address in wallets:
                                 self.notify(f"You have selected {wallet_address}.")
+                                wallet_index = wallets.index(wallet_address)
+                                capital_providers = capital_providers[wallet_index]
+                                self.notify(f"Existing Capital Providers for {wallet_address} are {capital_providers}")
                                 break
                             self.notify("Error: Invalid wallet address")
+
+                        while True:
+                            use_capital_provider: str = await self.app.prompt(
+                                prompt=f"Do you want to trade on {chain}-{network} with a capital provider? (Yes/No) >>> "
+                            )
+                            if self.app.to_stop_config:
+                                return
+
+                            if use_capital_provider is not None and use_capital_provider in ["Y", "y", "Yes", "yes"]:
+
+                                capital_provider: str = await self.app.prompt(
+                                    prompt=f"Enter your {chain}-{network} capital provider address approved for {wallet_address} >>> ",
+                                    is_password=False
+                                )
+                                # TODO: handle error when capital_provider has not given permission
+                                await self._get_gateway_instance().add_capital_provider(
+                                    chain, network, wallet_address, capital_provider
+                                )
+                                self.app.clear_input()
+                                break
+
+                            # TODO: handle when user do not want to provide capitalProvider
+                            # TODO: handle cases with multiple capitalProviders
+                            if use_capital_provider in ["N", "n", "No", "no"]:
+                                additional_prompt_values["capitalProviders"] = []
+                                break
+                            self.notify("Invalid input. Please try again or exit config [CTRL + x].\n")
 
                     # they want to create a new wallet even though they have other ones
                     else:
@@ -295,6 +360,7 @@ class GatewayCommand(GatewayChainApiManager):
                                 self.notify("Error adding wallet. Check private key.\n")
 
                         # display wallet balance
+                        self.notify("Wallet is added. Fetching balances ...")
                         native_token: str = native_tokens[chain]
                         balances: Dict[str, Any] = await self._get_gateway_instance().get_balances(
                             chain, network, wallet_address, [native_token], connector
@@ -303,19 +369,60 @@ class GatewayCommand(GatewayChainApiManager):
                         wallet_df: pd.DataFrame = build_wallet_display(native_token, wallet_table)
                         self.notify(wallet_df.to_string(index=False))
 
-                self.app.clear_input()
+                        while True:
 
-                # write wallets to Gateway connectors settings.
-                GatewayConnectionSetting.upsert_connector_spec(
-                    connector_name=connector,
-                    chain=chain,
-                    network=network,
-                    trading_type=trading_type,
-                    wallet_address=wallet_address,
-                    additional_spenders=additional_spenders,
-                    additional_prompt_values=additional_prompt_values,
-                )
-                self.notify(f"The {connector} connector now uses wallet {wallet_address} on {chain}-{network}")
+                            use_capital_provider: str = await self.app.prompt(
+                                prompt=f"Do you want to trade on {chain}-{network} with a capital provider? (Yes/No) >>> "
+                            )
+                            if self.app.to_stop_config:
+                                return
+                            if use_capital_provider is not None and use_capital_provider in ["Y", "y", "Yes", "yes"]:
+                                capital_provider: str = await self.app.prompt(
+                                    prompt=f"Enter your {chain}-{network} capital provider address approved for {wallet_address} >>> ",
+                                    is_password=False
+                                )
+                                # TODO: handle error when capital_provider has not given permission
+                                await self._get_gateway_instance().add_capital_provider(
+                                    chain, network, wallet_address, capital_provider
+                                )
+                                self.app.clear_input()
+                                break
+
+                            # TODO: handle when user do not want to provide capitalProvider
+                            # TODO: handle cases with multiple capitalProviders
+                            if use_capital_provider in ["N", "n", "No", "no"]:
+                                capital_provider: str = ''
+                                break
+                            self.notify("Invalid input. Please try again or exit config [CTRL + x].\n")
+
+
+                if (capital_provider):
+                    # write wallets to Gateway connectors settings.
+                    GatewayConnectionSetting.upsert_connector_spec(
+                        connector_name=connector,
+                        chain=chain,
+                        network=network,
+                        trading_type=trading_type,
+                        wallet_address=wallet_address,
+                        capital_provider=capital_provider,
+                        additional_spenders=additional_spenders,
+                        additional_prompt_values=additional_prompt_values,
+                    )
+                    self.notify(f"The {connector} connector now uses wallet {wallet_address} on {chain}-{network} with access to capital provider {capital_provider}")
+                else:
+                    self.notify("Saving config without capital provider")
+                    GatewayConnectionSetting.upsert_connector_spec(
+                        connector_name=connector,
+                        chain=chain,
+                        network=network,
+                        trading_type=trading_type,
+                        wallet_address=wallet_address,
+                        capital_provider=capital_provider,
+                        additional_spenders=additional_spenders,
+                        additional_prompt_values=additional_prompt_values,
+                    )
+                    self.notify(f"The {connector} connector now uses wallet {wallet_address} on {chain}-{network} without capital provider.")
+
 
                 # update AllConnectorSettings and fee overrides.
                 AllConnectorSettings.create_connector_settings()
@@ -339,37 +446,12 @@ class GatewayCommand(GatewayChainApiManager):
             prompt=f"Enter your {chain}-{network} wallet private key >>> ",
             is_password=True
         )
-        self.app.clear_input()
+        # self.app.clear_input()
         if self.app.to_stop_config:
             return
 
 
         additional_prompt_values = {}
-
-        while True:
-
-            use_capital_provider: str = await self.app.prompt(
-                prompt=f"Do you want to connect to {chain}-{network} with a capital provider? (Yes/No) >>> "
-            )
-            if self.app.to_stop_config:
-                return
-            if use_capital_provider is not None and use_capital_provider in ["Y", "y", "Yes", "yes"]:
-                capital_providers = []
-                capital_provider: str = await self.app.prompt(
-                    prompt=f"Enter your {chain}-{network} capital provider address >>> ",
-                    is_password=False
-                )
-                capital_providers.append(capital_provider)
-                self.app.clear_input()
-                additional_prompt_values["capitalProviders"] = capital_providers
-                break
-
-            # TODO: handle when user do not want to provide capitalProvider
-            # TODO: handle cases with multiple capitalProviders
-            if use_capital_provider in ["N", "n", "No", "no"]:
-                additional_prompt_values["capitalProviders"] = []
-                break
-            self.notify("Invalid input. Please try again or exit config [CTRL + x].\n")
 
         if chain == "near":
             wallet_account_id: str = await self.app.prompt(
