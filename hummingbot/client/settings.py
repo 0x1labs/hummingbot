@@ -132,6 +132,7 @@ class GatewayConnectionSetting:
         wallet_address: str,
         additional_spenders: List[str],
         additional_prompt_values: Dict[str, str],
+        capital_provider: str = '',
     ):
         new_connector_spec: Dict[str, str] = {
             "connector": connector_name,
@@ -139,6 +140,7 @@ class GatewayConnectionSetting:
             "network": network,
             "trading_type": trading_type,
             "wallet_address": wallet_address,
+            "capital_provider": capital_provider,
             "additional_spenders": additional_spenders,
             "additional_prompt_values": additional_prompt_values,
         }
