@@ -265,6 +265,7 @@ class ConnectorSetting(NamedTuple):
                 chain=connector_spec["chain"],
                 network=connector_spec["network"],
                 address=connector_spec["wallet_address"],
+                capital_provider_address=connector_spec["capital_provider"],
             )
             if not self.uses_clob_connector():
                 params["additional_spenders"] = connector_spec.get("additional_spenders", [])

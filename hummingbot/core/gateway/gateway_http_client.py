@@ -280,6 +280,7 @@ class GatewayHttpClient:
             network: str,
             address: str,
             token_symbols: List[str],
+            capital_provider: str = '',
             connector: str = None,
             fail_silently: bool = False,
     ) -> Dict[str, Any]:
@@ -291,6 +292,7 @@ class GatewayHttpClient:
                 "network": network,
                 "address": address,
                 "tokenSymbols": token_symbols,
+                "capitalProvider": capital_provider
             }
             if connector is not None:
                 request_params["connector"] = connector
