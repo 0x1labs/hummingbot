@@ -378,7 +378,7 @@ class GatewayCommand(GatewayChainApiManager):
                                 return
                             if use_capital_provider is not None and use_capital_provider in ["Y", "y", "Yes", "yes"]:
                                 capital_provider: str = await self.app.prompt(
-                                    prompt=f"Enter your {chain}-{network} capital provider address approved for {wallet_address} >>> ",
+                                    prompt=f"Enter your {chain}-{network} capital provider module address approved for {wallet_address} >>> ",
                                     is_password=False
                                 )
                                 # TODO: handle error when capital_provider has not given permission
