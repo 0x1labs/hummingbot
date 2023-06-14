@@ -562,6 +562,7 @@ class GatewayEVMAMM(ConnectorBase):
                 trade_type,
                 amount,
                 price,
+                self.capital_provider_address,
                 **request_args
             )
             transaction_hash: Optional[str] = order_result.get("txHash")
