@@ -357,7 +357,7 @@ class GatewayEVMAMM(ConnectorBase):
         """
         ret_val = {}
         resp: Dict[str, Any] = await self._get_gateway_instance().get_allowances(
-            self.chain, self.network, self.address, list(self._tokens), self.connector_name
+            self.chain, self.network, self.address, list(self._tokens), self.connector_name, self.capital_provider_address
         )
         for token, amount in resp["approvals"].items():
             ret_val[token] = Decimal(str(amount))
@@ -867,6 +867,7 @@ class GatewayEVMAMM(ConnectorBase):
         }
 
     async def start_network(self):
+        print("Starting network")
         if self._trading_required:
             self._status_polling_task = safe_ensure_future(self._status_polling_loop())
             self._update_allowances = safe_ensure_future(self.update_allowances())
